@@ -1,0 +1,229 @@
+{% extends "layout.html" %}
+
+{% block title %}Match Details - Cricket Live Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+    .nav-tabs .nav-link {
+        color: #0c2461;
+        font-weight: 500;
+    }
+    .nav-tabs .nav-link.active {
+        color: #0c2461;
+        font-weight: 700;
+        border-bottom: 3px solid #0c2461;
+    }
+    .match-header {
+        background-color: #e9ecef;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .team-logo {
+        width: 60px;
+        height: 60px;
+        background-color: #ddd;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.25rem;
+    }
+    .team-name {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    .score {
+        font-size: 1.75rem;
+        font-weight: 700;
+    }
+    .vs {
+        font-size: 1.25rem;
+        color: #6c757d;
+    }
+    .status-badge {
+        padding: .5rem 1rem;
+        border-radius: 50px;
+        font-weight: 500;
+    }
+    .commentary-item {
+        border-left: 4px solid transparent;
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+    }
+    .commentary-item.boundary {
+        border-left-color: #0c2461;
+    }
+    .commentary-item.wicket {
+        border-left-color: #dc3545;
+    }
+    .over-ball {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #0c2461;
+    }
+    .refresh-timer {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .auto-refresh-toggle {
+        display: flex;
+        align-items: center;
+    }
+    .auto-refresh-toggle label {
+        margin-left: 0.5rem;
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex align-items-center">
+            <a href="/" class="btn btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i> Back to Live Matches
+            </a>
+            <h1 class="mb-0">Match Details</h1>
+        </div>
+        <hr>
+    </div>
+</div>
+
+<!-- Match Header -->
+<div class="match-header">
+    <div class="row align-items-center">
+        <div class="col-md-4 text-center text-md-start mb-3 mb-md-0">
+            <div class="d-flex align-items-center justify-content-center justify-content-md-start">
+                <div class="team-logo me-3">{{ match_info.team1.shortName }}</div>
+                <div>
+                    <div class="team-name">{{ match_info.team1.teamName }}</div>
+                    <div class="score">{{ match_info.team1.score }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 text-center mb-3 mb-md-0">
+            <div class="vs">VS</div>
+            <div class="mt-2">
+                <span class="status-badge bg-primary text-white">{{ match_info.status }}</span>
+            </div>
+            <div class="mt-2 small">{{ match_info.venue }}</div>
+        </div>
+        
+        <div class="col-md-4 text-center text-md-end mb-3 mb-md-0">
+            <div class="d-flex align-items-center justify-content-center justify-content-md-end">
+                <div>
+                    <div class="team-name">{{ match_info.team2.teamName }}</div>
+                    <div class="score">{{ match_info.team2.score }}</div>
+                </div>
+                <div class="team-logo ms-3">{{ match_info.team2.shortName }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs mb-4" id="matchDetailsTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="scorecard-tab" data-bs-toggle="tab" data-bs-target="#scorecard" type="button" role="tab" aria-controls="scorecard" aria-selected="true">
+            <i class="bi bi-table"></i> Scorecard
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="commentary-tab" data-bs-toggle="tab" data-bs-target="#commentary" type="button" role="tab" aria-controls="commentary" aria-selected="false">
+            <i class="bi bi-chat-text"></i> Commentary
+        </button>
+    </li>
+    <li class="nav-item ms-auto" role="presentation">
+        <div class="auto-refresh-toggle">
+            <input type="checkbox" class="form-check-input" id="autoRefreshToggle">
+            <label class="form-check-label" for="autoRefreshToggle">Auto-refresh</label>
+        </div>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="matchDetailsTabContent">
+    <!-- Scorecard Tab -->
+    <div class="tab-pane fade show active" id="scorecard" role="tabpanel" aria-labelledby="scorecard-tab">
+        <div id="scorecard-container">
+            <div class="text-center" id="scorecardLoading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading scorecard...</span>
+                </div>
+                <p>Loading scorecard...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Commentary Tab -->
+    <div class="tab-pane fade" id="commentary" role="tabpanel" aria-labelledby="commentary-tab">
+        <div class="d-flex justify-content-between mb-3">
+            <h5>Live Commentary</h5>
+            <button class="btn btn-sm btn-outline-primary" id="refreshCommentaryBtn">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+        <div id="commentary-container">
+            <div class="text-center" id="commentaryLoading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading commentary...</span>
+                </div>
+                <p>Loading commentary...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/app.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const matchId = '{{ match_id }}';
+        
+        // Load scorecard on page load
+        fetchScorecard(matchId, 'scorecard-container');
+        
+        // Add click event for commentary tab
+        document.getElementById('commentary-tab').addEventListener('click', function() {
+            fetchCommentary(matchId, 'commentary-container');
+        });
+        
+        // Add click event for refresh commentary button
+        document.getElementById('refreshCommentaryBtn').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Refreshing...';
+            
+            fetchCommentary(matchId, 'commentary-container')
+                .finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+                });
+        });
+        
+        // Set up auto-refresh functionality
+        const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+        let refreshInterval;
+        
+        autoRefreshToggle.addEventListener('change', function() {
+            if (this.checked) {
+                // Set up auto-refresh every 30 seconds
+                refreshInterval = setInterval(function() {
+                    const activeTab = document.querySelector('.tab-pane.active');
+                    if (activeTab.id === 'scorecard') {
+                        fetchScorecard(matchId, 'scorecard-container');
+                    } else if (activeTab.id === 'commentary') {
+                        fetchCommentary(matchId, 'commentary-container');
+                    }
+                }, 30000);
+            } else {
+                // Clear the interval
+                clearInterval(refreshInterval);
+            }
+        });
+    });
+</script>
+{% endblock %}

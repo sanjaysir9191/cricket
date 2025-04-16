@@ -1,0 +1,121 @@
+this.disabled = false;
+                            this.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh Commentary';
+                            alert('Failed to refresh commentary: ' + error.message);
+                        });
+                });
+            }
+        })
+        .catch(error => {
+            document.getElementById(modalContentId).innerHTML = `
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> ${error.message || 'Failed to load commentary data.'}
+                </div>
+            `;
+        })
+        .finally(() => {
+            hideLoading('modalLoading');
+        });
+}
+
+// Initialize the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize popovers and tooltips
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl);
+    });
+    
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Initialize match details modal if it exists
+    const matchDetailsModalElement = document.getElementById('matchDetailsModal');
+    let matchDetailsModal;
+    
+    if (matchDetailsModalElement) {
+        matchDetailsModal = new bootstrap.Modal(matchDetailsModalElement);
+        
+        // Set up event listeners for scorecard buttons
+        document.querySelectorAll('.view-scorecard').forEach(button => {
+            button.addEventListener('click', function() {
+                const matchId = this.getAttribute('data-match-id');
+                const teamNames = this.closest('.card').querySelector('.card-header').textContent;
+                
+                document.getElementById('matchDetailsModalLabel').textContent = 'Scorecard: ' + teamNames;
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="text-center" id="modalLoading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Loading scorecard...</p>
+                    </div>
+                `;
+                
+                matchDetailsModal.show();
+                fetchScorecard(matchId);
+            });
+        });
+        
+        // Set up event listeners for commentary buttons
+        document.querySelectorAll('.view-commentary').forEach(button => {
+            button.addEventListener('click', function() {
+                const matchId = this.getAttribute('data-match-id');
+                const teamNames = this.closest('.card').querySelector('.card-header').textContent;
+                
+                document.getElementById('matchDetailsModalLabel').textContent = 'Live Commentary: ' + teamNames;
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="text-center" id="modalLoading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Loading commentary...</p>
+                    </div>
+                `;
+                
+                matchDetailsModal.show();
+                fetchCommentary(matchId);
+            });
+        });
+    }
+    
+    // Auto-refresh functionality for the homepage
+    const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+    let refreshInterval;
+    
+    if (autoRefreshToggle) {
+        autoRefreshToggle.addEventListener('change', function() {
+            if (this.checked) {
+                // Set up auto-refresh every 30 seconds
+                refreshInterval = setInterval(function() {
+                    window.location.reload();
+                }, 30000);
+            } else {
+                // Clear the interval
+                clearInterval(refreshInterval);
+            }
+        });
+    }
+});
+
+// Helper function to format date and time
+function formatDateTime(dateTimeString) {
+    const date = new Date(dateTimeString);
+    return date.toLocaleString();
+}
+
+// Helper function to handle API errors
+function handleApiError(error, containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <strong>Error:</strong> ${error.message || 'An unexpected error occurred.'}
+            </div>
+        `;
+    } else {
+        console.error('Error container not found:', containerId);
+        console.error(error);
+    }
+}
